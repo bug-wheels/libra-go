@@ -19,7 +19,7 @@ func MonitoringService(services []config.ServiceConfig) {
 	table.AddRow("Name", "Status", "Reason")
 	for _, service := range services {
 		status, reason := monitorService(service)
-		table.AddRow(service.Name, util.Any(status, "正常", color.RedString("警告")), reason)
+		table.AddRow(service.Name, util.Any(status, color.GreenString("正常"), color.RedString("警告")), reason)
 	}
 	fmt.Println(table)
 	log.Println("结束检测服务健康状态: 最终结果为")

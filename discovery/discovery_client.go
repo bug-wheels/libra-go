@@ -92,7 +92,7 @@ func (nacos NacosDiscoveryClient) GetInstances(serviceId string) ([]ServiceInsta
 func NewNacosDiscoveryClient(nacosConfig config.NacosConfig) (*NacosDiscoveryClient, error) {
 	clientConfig := *constant.NewClientConfig(
 		constant.WithNamespaceId(nacosConfig.Namespace),
-		constant.WithTimeoutMs(1000),
+		constant.WithTimeoutMs(5000),
 		constant.WithNotLoadCacheAtStart(true),
 		constant.WithUsername(nacosConfig.Username),
 		constant.WithPassword(nacosConfig.Password),
