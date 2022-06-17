@@ -31,7 +31,7 @@ func main() {
 			},
 			&cli.Int64Flag{
 				Name:  "intervalMS",
-				Value: 30_000,
+				Value: 20_000,
 				Usage: "循环间隔时间，毫秒",
 			},
 			&cli.Int64Flag{

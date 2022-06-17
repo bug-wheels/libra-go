@@ -46,3 +46,30 @@ services: # 要监控的服务
       mustHosts: # 必须匹配上的 hosts 列表，如果配置的 hosts 中不在存活的实例中，则告警，可以不配 
         - 127.0.0.1
 ```
+
+# 交叉编译
+
+自己平台编译
+
+```shell
+go build -o libra-go main.go
+```
+
+编译为 Mac 平台
+
+```shell
+GOOS=darwin GOARCH=amd64 go build -o libra-go main.go
+```
+
+编译为 linux 平台
+
+```shell
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o libra-go main.go
+```
+
+编译为 windows 平台
+
+```shell
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o libra-go.exe main.go
+```
+
