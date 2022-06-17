@@ -2,7 +2,9 @@ package config
 
 type LibraConfig struct {
 	RegistrationCenters []RegistrationCenterConfig `yaml:"registration-centers"`
+	RocketMQClients     []RocketMQClientConfig     `yaml:"rocket-mq"`
 	Services            []ServiceConfig            `yaml:"services"`
+	Consumers           []ConsumerConfig           `yaml:"consumers"`
 }
 
 type ServiceConfig struct {
@@ -12,10 +14,23 @@ type ServiceConfig struct {
 	Alarm              AlarmConfig `yaml:"alarm"`
 }
 
+type ConsumerConfig struct {
+	Name              string      `yaml:"name"`
+	Topic             string      `yaml:"topic"`
+	SubscriptionGroup string      `yaml:"subscription-group"`
+	MQ                string      `yaml:"mq"`
+	Alarm             AlarmConfig `yaml:"alarm"`
+}
+
 type AlarmConfig struct {
 	Check     bool     `yaml:"check"`
 	MinSize   int      `yaml:"min-size"`
 	MustHosts []string `yaml:"must-hosts"`
+}
+
+type RocketMQClientConfig struct {
+	Name string `yaml:"name"`
+	Host string `yaml:"host"`
 }
 
 type RegistrationCenterConfig struct {

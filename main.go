@@ -8,6 +8,7 @@ import (
 	"libra-go/config"
 	"libra-go/discovery"
 	"libra-go/monitor"
+	"libra-go/rocketmq"
 	"log"
 	"os"
 	"time"
@@ -30,7 +31,7 @@ func main() {
 			},
 			&cli.Int64Flag{
 				Name:  "intervalMS",
-				Value: 10_000,
+				Value: 30_000,
 				Usage: "循环间隔时间，毫秒",
 			},
 			&cli.Int64Flag{
@@ -66,6 +67,7 @@ func main() {
 			fmt.Printf("config.app: %#v\n", libraConfig)
 
 			discovery.Setup(libraConfig.RegistrationCenters)
+			rocketmq.Setup(libraConfig.RocketMQClients)
 
 			if len(libraConfig.Services) == 0 {
 				return nil
@@ -74,11 +76,11 @@ func main() {
 			if isNeedLoop {
 				foreverLoop := loopcount < 1
 				for i := 0; foreverLoop || i <= loopcount; i++ {
-					monitor.MonitoringService(libraConfig.Services)
+					monitor.Monitoring(libraConfig)
 					time.Sleep(time.Duration(intervalMS) * time.Millisecond)
 				}
 			} else {
-				monitor.MonitoringService(libraConfig.Services)
+				monitor.Monitoring(libraConfig)
 			}
 			return nil
 		},
