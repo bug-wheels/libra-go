@@ -16,7 +16,9 @@ import (
 func Monitoring(libra config.LibraConfig) {
 	util.CallClear()
 	log.Println("开始检测服务健康状态")
+	log.Println("===================< 服务状态查询 >========================")
 	monitoringService(libra.Services)
+	log.Println("===================< MQ 状态查询 >========================")
 	monitoringRocketMQ(libra.Consumers)
 	log.Println("结束检测服务健康状态")
 }
@@ -35,22 +37,27 @@ func monitoringService(services []config.ServiceConfig) {
 func monitoringRocketMQ(consumers []config.ConsumerConfig) {
 	table := uitable.New()
 	table.MaxColWidth = 100
-	table.AddRow("Name", "Status", "Reason")
+	table.AddRow("Name", "Status", "Delay", "Reason")
 	for _, consumer := range consumers {
-		status, reason, instancesCount := monitorConsumer(consumer)
-		table.AddRow(consumer.Name, util.Any(status, color.GreenString("正常("+strconv.Itoa(instancesCount)+")"), color.RedString("警告("+strconv.Itoa(instancesCount)+")")), reason)
+		status, reason, instancesCount, delay := monitorConsumer(consumer)
+		table.AddRow(consumer.Name, util.Any(status, color.GreenString("正常("+strconv.Itoa(instancesCount)+")"), color.RedString("警告("+strconv.Itoa(instancesCount)+")")), delay, reason)
 	}
 	fmt.Println(table)
 }
 
-func monitorConsumer(consumer config.ConsumerConfig) (bool, string, int) {
+func monitorConsumer(consumer config.ConsumerConfig) (bool, string, int, int64) {
 	instancesCount := 0
+	delay := int64(-1)
 	if consumer.Alarm.Check {
 		rocketMQClient := rocketmq.RocketMQClients[consumer.MQ]
-		instances, _ := rocketMQClient.GetInstances(consumer.Topic, consumer.SubscriptionGroup)
+		instances, err := rocketMQClient.GetInstances(consumer.Topic, consumer.SubscriptionGroup)
+		if err != nil {
+			return false, err.Error(), 0, -1
+		}
 		instancesCount = len(instances.ClientInfos)
+		delay = instances.DiffTotal
 		if instancesCount < consumer.Alarm.MinSize {
-			return false, fmt.Sprintf("服务数量不对，告警最小数量应为 %d, 现在为 %d", consumer.Alarm.MinSize, instancesCount), instancesCount
+			return false, fmt.Sprintf("服务数量不对，告警最小数量应为 %d, 现在为 %d", consumer.Alarm.MinSize, instancesCount), instancesCount, instances.DiffTotal
 		}
 		if len(consumer.Alarm.MustHosts) > 0 {
 			required := mapset.NewSet[string]()
@@ -62,11 +69,12 @@ func monitorConsumer(consumer config.ConsumerConfig) (bool, string, int) {
 				required.Remove(instance)
 			}
 			if len(required.ToSlice()) > 0 {
-				return false, fmt.Sprintf("MustHosts error，%s 不存在，%s 必须存在", required.String(), originHostSet), instancesCount
+				return false, fmt.Sprintf("MustHosts error，%s 不存在，%s 必须存在", required.String(), originHostSet), instancesCount, instances.DiffTotal
 			}
 		}
 	}
-	return true, "", instancesCount
+	return true, "", instancesCount, delay
+
 }
 
 func monitorService(service config.ServiceConfig) (bool, string, int) {

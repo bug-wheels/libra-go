@@ -35,8 +35,14 @@ func (r RocketConsoleClient) GetInstances(topic string, subscriptionGroup string
 		return nil, errors.New("解析jsonpath失败")
 	}
 	if status.(float64) != 0 {
-		errMsg, _ := jsonpath.JsonPathLookup(jsonData, "$.errMsg")
-		return nil, errors.New(errMsg.(string))
+		errMsg, err := jsonpath.JsonPathLookup(jsonData, "$.errMsg")
+		if err != nil {
+			return nil, err
+		}
+		if errMsg != nil {
+			return nil, errors.New(errMsg.(string))
+		}
+		return nil, errors.New("未找到错误信息")
 	}
 	clientInfo, _ := jsonpath.JsonPathLookup(jsonData, "$.data."+subscriptionGroup+".queueStatInfoList.clientInfo")
 	diffTotal, _ := jsonpath.JsonPathLookup(jsonData, "$.data."+subscriptionGroup+".diffTotal")
