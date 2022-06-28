@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="assets/main.css"/>
+    <script src="assets/vue.global.prod.js"></script>
+    <script src="assets/axios.min.js"></script>
+    <script src="assets/main.js"></script>
+    <meta charset="UTF-8"/>
+    <link rel="icon" href="/favicon.ico"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Libra</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            background-color: #F3F5F8;
+        }
+
+        #app {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #F3F5F8;
+            height: 100%;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="container">
+        <div>
+            刷新时间：${refreshTime}
+        </div>
+        <div class="panel" v-for="monitorResult in monitorResults">
+            <div class="panel-header">
+                <div class="panel-title">
+                    ${ monitorResult.Name }
+                </div>
+            </div>
+            <div class="panel-body">
+                <table class="mytable">
+                    <colgroup>
+                        <col width="300px">
+                        <col width="100px">
+                        <col>
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th v-for="title in monitorResult.Title">${title}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="rows in monitorResult.Data">
+                        <td v-for="row in rows">${row}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function dateFormat(fmt, date) {
+        let ret
+        const opt = {
+            "y+": date.getFullYear().toString(),        // 年
+            "M+": (date.getMonth() + 1).toString(),     // 月
+            "d+": date.getDate().toString(),            // 日
+            "H+": date.getHours().toString(),           // 时
+            "m+": date.getMinutes().toString(),         // 分
+            "s+": date.getSeconds().toString()          // 秒
+        };
+        for (let k in opt) {
+            ret = new RegExp("(" + k + ")").exec(fmt)
+            if (ret) {
+                fmt = fmt.replace(ret[1], (ret[1].length == 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
+            }
+        }
+        return fmt
+    }
+
+    const Counter = {
+        compilerOptions: {
+            delimiters: ['${', '}'],
+            comments: true
+        },
+        data() {
+            return {
+                monitorResults: [],
+                errorInfo: [],
+                refreshTime: ''
+            }
+        },
+        mounted() {
+            let _that = this
+            axios.get('/monitor')
+                .then(function (response) {
+                    _that.monitorResults = response.data
+                    _that.refreshTime = dateFormat('yyyy-MM-dd HH:mm:ss', new Date())
+                    console.log(response);
+                })
+                .catch(function (error) {
+                    console.log(error);
+                })
+            setInterval(() => {
+                axios.get('/monitor')
+                    .then(function (response) {
+                        _that.monitorResults = response.data
+                        _that.refreshTime = dateFormat('yyyy-MM-dd HH:mm:ss', new Date())
+                        console.log(response);
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    })
+            }, 10000)
+        }
+    }
+    Vue.createApp(Counter).mount('#app')
+</script>
+</body>
+</html>

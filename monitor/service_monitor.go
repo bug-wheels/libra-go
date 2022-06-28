@@ -13,36 +13,62 @@ import (
 	"strconv"
 )
 
-func Monitoring(libra config.LibraConfig) {
+func Monitoring(libra config.LibraConfig) []MonitoringInfo {
+	var monitoringInfo []MonitoringInfo
 	util.CallClear()
 	log.Println("开始检测服务健康状态")
 	log.Println("===================< 服务状态查询 >========================")
-	monitoringService(libra.Services)
+	service := monitoringService(libra.Services)
+	monitoringInfo = append(monitoringInfo, service)
 	log.Println("===================< MQ 状态查询 >========================")
-	monitoringRocketMQ(libra.Consumers)
+	mq := monitoringRocketMQ(libra.Consumers)
+	monitoringInfo = append(monitoringInfo, mq)
 	log.Println("结束检测服务健康状态")
+	return monitoringInfo
 }
 
-func monitoringService(services []config.ServiceConfig) {
+type MonitoringInfo struct {
+	Name  string
+	Title []string
+	Data  [][]string
+}
+
+func monitoringService(services []config.ServiceConfig) MonitoringInfo {
+	monitoringInfo := MonitoringInfo{
+		Name:  "Service",
+		Title: []string{"Name", "Status", "Reason"},
+		Data:  [][]string{},
+	}
 	table := uitable.New()
 	table.MaxColWidth = 100
 	table.AddRow("Name", "Status", "Reason")
 	for _, service := range services {
 		status, reason, instancesCount := monitorService(service)
 		table.AddRow(service.Name, util.Any(status, color.GreenString("正常("+strconv.Itoa(instancesCount)+")"), color.RedString("警告("+strconv.Itoa(instancesCount)+")")), reason)
+		monitoringInfo.Data = append(monitoringInfo.Data, []string{service.Name, util.Any(status, "正常("+strconv.Itoa(instancesCount)+")", "警告("+strconv.Itoa(instancesCount)+")"), reason})
+
 	}
 	fmt.Println(table)
+	return monitoringInfo
 }
 
-func monitoringRocketMQ(consumers []config.ConsumerConfig) {
+func monitoringRocketMQ(consumers []config.ConsumerConfig) MonitoringInfo {
+	monitoringInfo := MonitoringInfo{
+		Name:  "MQ",
+		Title: []string{"Name", "Status", "Delay", "Reason"},
+		Data:  [][]string{},
+	}
 	table := uitable.New()
 	table.MaxColWidth = 100
 	table.AddRow("Name", "Status", "Delay", "Reason")
+
 	for _, consumer := range consumers {
 		status, reason, instancesCount, delay := monitorConsumer(consumer)
 		table.AddRow(consumer.Name, util.Any(status, color.GreenString("正常("+strconv.Itoa(instancesCount)+")"), color.RedString("警告("+strconv.Itoa(instancesCount)+")")), delay, reason)
+		monitoringInfo.Data = append(monitoringInfo.Data, []string{consumer.Name, util.Any(status, "正常("+strconv.Itoa(instancesCount)+")", "警告("+strconv.Itoa(instancesCount)+")"), strconv.FormatInt(delay, 10), reason})
 	}
 	fmt.Println(table)
+	return monitoringInfo
 }
 
 func monitorConsumer(consumer config.ConsumerConfig) (bool, string, int, int64) {
